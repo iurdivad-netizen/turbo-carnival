@@ -1,0 +1,83 @@
+name: Monte Carlo Trading Simulation
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulations:
+        description: 'Number of simulations to run'
+        required: false
+        default: '10000'
+        type: choice
+        options:
+          - '1000'
+          - '5000'
+          - '10000'
+          - '25000'
+      scenario_analysis:
+        description: 'Include scenario analysis'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  simulate:
+    name: Run Monte Carlo Simulation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Monte Carlo Simulation
+        run: |
+          echo "::group::Running Monte Carlo Simulation"
+          python monte_carlo_simulator.py > simulation_output.txt 2>&1
+          echo "::endgroup::"
+
+          echo "::notice::Simulation completed successfully"
+
+      - name: Display Summary
+        run: |
+          echo "### 📊 Monte Carlo Simulation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          head -n 100 simulation_output.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 Download full results and charts from the artifacts below." >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload simulation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: monte-carlo-results-${{ github.run_number }}
+          path: |
+            simulation_output.txt
+            monte_carlo_results.png
+          retention-days: 30
+
+      - name: Check for output files
+        run: |
+          if [ -f "monte_carlo_results.png" ]; then
+            echo "✓ Chart generated successfully"
+            ls -lh monte_carlo_results.png
+          else
+            echo "⚠ Chart file not found"
+          fi
+
+          if [ -f "simulation_output.txt" ]; then
+            echo "✓ Results captured successfully"
+            wc -l simulation_output.txt
+          else
+            echo "⚠ Output file not found"
+          fi

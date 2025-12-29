@@ -19,7 +19,25 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Execution
+### Option 1: Run on GitHub Actions (Recommended)
+
+The easiest way to run simulations without installing anything locally:
+
+1. Go to your repository on GitHub
+2. Click the **Actions** tab
+3. Select **Monte Carlo Trading Simulation** workflow
+4. Click **Run workflow** button
+5. Choose number of simulations (1,000 - 25,000)
+6. Click **Run workflow**
+7. Wait for completion (~2-5 minutes)
+8. Download results from **Artifacts** section
+
+The workflow generates:
+- Full text output with all statistics
+- 12-panel visualization chart (PNG)
+- Results preserved for 30 days
+
+### Option 2: Local Execution
 
 Run the full simulation with default parameters (10,000 simulations):
 
