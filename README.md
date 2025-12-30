@@ -45,7 +45,30 @@ Run the full simulation with default parameters (10,000 simulations):
 python monte_carlo_simulator.py
 ```
 
-### Custom Configuration
+**Command-line options:**
+
+```bash
+# Run with custom simulation count
+python monte_carlo_simulator.py -n 25000
+
+# Run 50k simulations without scenario analysis (faster)
+python monte_carlo_simulator.py -n 50000 --no-scenario
+
+# Custom output filename and random seed
+python monte_carlo_simulator.py -n 10000 --seed 123 -o my_results.png
+
+# Show all options
+python monte_carlo_simulator.py --help
+```
+
+**Supported simulation counts:**
+- `1,000` - Quick test (~30 seconds)
+- `5,000` - Standard run (~1-2 minutes)
+- `10,000` - Default/recommended (~2-3 minutes)
+- `25,000` - High precision (~5-8 minutes)
+- `100,000` - Maximum (~30+ minutes)
+
+### Option 3: Custom Configuration
 
 ```python
 from monte_carlo_simulator import MonteCarloSimulator, SimulationConfig
