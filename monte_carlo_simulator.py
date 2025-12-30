@@ -4,6 +4,8 @@ from scipy import stats
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
 import warnings
+import argparse
+import sys
 warnings.filterwarnings('ignore')
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -594,7 +596,7 @@ class MonteCarloSimulator:
 #                             SCENARIO ANALYSIS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_scenario_analysis():
+def run_scenario_analysis(n_simulations: int = 5000):
     """Run simulations under different scenarios"""
 
     print("\n" + "=" * 70)
@@ -609,10 +611,10 @@ def run_scenario_analysis():
             prob_exit_zone=0.800,
             standard_both_tp_prob=0.55,
             standard_both_sl_prob=0.05,
-            n_simulations=5000
+            n_simulations=n_simulations
         ),
         'Base Case': SimulationConfig(
-            n_simulations=5000
+            n_simulations=n_simulations
         ),
         'Optimistic': SimulationConfig(
             monthly_trades_mean=48,
@@ -621,7 +623,7 @@ def run_scenario_analysis():
             prob_exit_zone=0.680,
             standard_both_tp_prob=0.70,
             standard_both_sl_prob=0.015,
-            n_simulations=5000
+            n_simulations=n_simulations
         )
     }
 
@@ -658,10 +660,63 @@ def run_scenario_analysis():
 
 if __name__ == "__main__":
 
-    # Initialize simulator with default configuration
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='Monte Carlo Trading Simulator for EURUSD',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python monte_carlo_simulator.py                    # Run with default 10,000 simulations
+  python monte_carlo_simulator.py -n 25000           # Run with 25,000 simulations
+  python monte_carlo_simulator.py -n 50000 --no-scenario  # Run 50k without scenario analysis
+        """
+    )
+
+    parser.add_argument(
+        '-n', '--simulations',
+        type=int,
+        default=10000,
+        help='Number of simulations to run (default: 10000, max recommended: 100000)'
+    )
+
+    parser.add_argument(
+        '--no-scenario',
+        action='store_true',
+        help='Skip scenario analysis (saves time for large simulations)'
+    )
+
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=42,
+        help='Random seed for reproducibility (default: 42)'
+    )
+
+    parser.add_argument(
+        '-o', '--output',
+        type=str,
+        default='monte_carlo_results.png',
+        help='Output filename for chart (default: monte_carlo_results.png)'
+    )
+
+    args = parser.parse_args()
+
+    # Validate simulation count
+    if args.simulations < 100:
+        print("⚠️  Warning: Less than 100 simulations may produce unreliable results")
+        print("   Minimum recommended: 1,000 simulations\n")
+
+    if args.simulations > 100000:
+        print("⚠️  Warning: More than 100,000 simulations may take significant time")
+        response = input("   Continue? (y/n): ")
+        if response.lower() != 'y':
+            print("Simulation cancelled.")
+            sys.exit(0)
+
+    # Initialize simulator with configuration
     config = SimulationConfig(
-        n_simulations=10000,
-        random_seed=42
+        n_simulations=args.simulations,
+        random_seed=args.seed
     )
 
     simulator = MonteCarloSimulator(config)
@@ -673,10 +728,15 @@ if __name__ == "__main__":
     simulator.print_results()
 
     # Generate visualizations
-    simulator.plot_results(save_path='monte_carlo_results.png')
+    simulator.plot_results(save_path=args.output)
 
-    # Run scenario analysis
-    scenario_results = run_scenario_analysis()
+    # Run scenario analysis (optional)
+    if not args.no_scenario:
+        # Use half the main simulation count for scenario analysis to save time
+        scenario_sims = max(1000, args.simulations // 2)
+        scenario_results = run_scenario_analysis(n_simulations=scenario_sims)
+    else:
+        print("\n⏭️  Skipping scenario analysis")
 
     print("\n" + "=" * 70)
     print("                    SIMULATION COMPLETE")

@@ -23,6 +23,7 @@ jobs:
   simulate:
     name: Run Monte Carlo Simulation
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -41,11 +42,11 @@ jobs:
 
       - name: Run Monte Carlo Simulation
         run: |
-          echo "::group::Running Monte Carlo Simulation"
-          python monte_carlo_simulator.py > simulation_output.txt 2>&1
+          echo "::group::Running Monte Carlo Simulation with ${{ github.event.inputs.simulations }} simulations"
+          python monte_carlo_simulator.py -n ${{ github.event.inputs.simulations }} > simulation_output.txt 2>&1
           echo "::endgroup::"
 
-          echo "::notice::Simulation completed successfully"
+          echo "::notice::Simulation completed successfully with ${{ github.event.inputs.simulations }} simulations"
 
       - name: Display Summary
         run: |
