@@ -286,6 +286,14 @@ class MonteCarloSimulator:
         avg_dd_duration = np.mean(drawdown_durations) if drawdown_durations else 0
         max_dd_duration = max(drawdown_durations) if drawdown_durations else 0
 
+        # Calmar Ratio: Annual Return / Max Drawdown
+        # Industry standard for hedge fund performance
+        calmar_ratio = net_profit / max_drawdown if max_drawdown > 0 else float('inf')
+
+        # Consecutive Wins Analysis
+        max_consecutive_wins = self._count_max_consecutive_wins(trades)
+        avg_win_streak = self._calculate_avg_win_streak(trades)
+
         return {
             'annual_pips': sum(all_pips),
             'total_trades': len(trades),
@@ -313,7 +321,11 @@ class MonteCarloSimulator:
             'avg_loss': avg_loss,
             'sortino_ratio': sortino_ratio,
             'avg_dd_duration': avg_dd_duration,
-            'max_dd_duration': max_dd_duration
+            'max_dd_duration': max_dd_duration,
+            'calmar_ratio': calmar_ratio,
+            'max_consecutive_wins': max_consecutive_wins,
+            'avg_win_streak': avg_win_streak,
+            'drawdown_durations': drawdown_durations  # For histogram
         }
 
     def _count_max_consecutive_losses(self, trades: List[Dict]) -> int:
@@ -329,6 +341,39 @@ class MonteCarloSimulator:
                 current_streak = 0
 
         return max_streak
+
+    def _count_max_consecutive_wins(self, trades: List[Dict]) -> int:
+        """Count maximum consecutive winning trades"""
+        max_streak = 0
+        current_streak = 0
+
+        for trade in trades:
+            if trade['is_win']:
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
+            else:
+                current_streak = 0
+
+        return max_streak
+
+    def _calculate_avg_win_streak(self, trades: List[Dict]) -> float:
+        """Calculate average winning streak length"""
+        win_streaks = []
+        current_streak = 0
+
+        for trade in trades:
+            if trade['is_win']:
+                current_streak += 1
+            else:
+                if current_streak > 0:
+                    win_streaks.append(current_streak)
+                    current_streak = 0
+
+        # Add final streak if still in one
+        if current_streak > 0:
+            win_streaks.append(current_streak)
+
+        return np.mean(win_streaks) if win_streaks else 0
 
     def run_simulation(self, n_simulations: int = None) -> Dict:
         """Run full Monte Carlo simulation"""
@@ -374,6 +419,9 @@ class MonteCarloSimulator:
             'sortino_ratio': np.array([s['sortino_ratio'] for s in simulations]),
             'avg_dd_duration': np.array([s['avg_dd_duration'] for s in simulations]),
             'max_dd_duration': np.array([s['max_dd_duration'] for s in simulations]),
+            'calmar_ratio': np.array([s['calmar_ratio'] for s in simulations]),
+            'max_consecutive_wins': np.array([s['max_consecutive_wins'] for s in simulations]),
+            'avg_win_streak': np.array([s['avg_win_streak'] for s in simulations]),
         }
 
         return self.results
@@ -519,6 +567,19 @@ class MonteCarloSimulator:
         print(f"  Max DD Duration (95th):{np.percentile(r['max_dd_duration'], 95):.0f} trades")
         print(f"  Worst Case DD Duration:{np.max(r['max_dd_duration']):.0f} trades")
 
+        # Calmar Ratio
+        mean_calmar = np.mean(r['calmar_ratio'][r['calmar_ratio'] < 1000])
+        median_calmar = np.median(r['calmar_ratio'][r['calmar_ratio'] < 1000])
+        print(f"\n  Mean Calmar Ratio:     {mean_calmar:.2f}")
+        print(f"  Median Calmar Ratio:   {median_calmar:.2f}")
+        print(f"  (Return/Drawdown - hedge fund standard)")
+
+        # Consecutive Wins
+        print(f"\n  Avg Max Win Streak:    {np.mean(r['max_consecutive_wins']):.1f}")
+        print(f"  95th %ile Win Streak:  {np.percentile(r['max_consecutive_wins'], 95):.0f}")
+        print(f"  Max Observed Streak:   {np.max(r['max_consecutive_wins']):.0f}")
+        print(f"  Avg Win Streak Length: {np.mean(r['avg_win_streak']):.1f}")
+
         print("\n" + "=" * 70)
 
     def plot_results(self, save_path: str = None):
@@ -529,14 +590,14 @@ class MonteCarloSimulator:
 
         r = self.results
 
-        fig = plt.figure(figsize=(24, 24))
+        fig = plt.figure(figsize=(24, 30))
 
         # Title
         fig.suptitle('Monte Carlo Simulation: EURUSD 2026 Forecast\n(Based on 147-trade historical sample)',
-                     fontsize=16, fontweight='bold', y=0.99)
+                     fontsize=16, fontweight='bold', y=0.995)
 
         # 1. Annual Pips Distribution
-        ax1 = fig.add_subplot(4, 4, 1)
+        ax1 = fig.add_subplot(5, 4, 1)
         ax1.hist(r['annual_pips'], bins=60, density=True, alpha=0.7, color='steelblue', edgecolor='black')
         ax1.axvline(np.mean(r['annual_pips']), color='red', linestyle='--', linewidth=2, label=f'Mean: {np.mean(r["annual_pips"]):,.0f}')
         ax1.axvline(np.median(r['annual_pips']), color='orange', linestyle='--', linewidth=2, label=f'Median: {np.median(r["annual_pips"]):,.0f}')
@@ -549,7 +610,7 @@ class MonteCarloSimulator:
         ax1.grid(True, alpha=0.3)
 
         # 2. Win Rate Distribution
-        ax2 = fig.add_subplot(4, 4, 2)
+        ax2 = fig.add_subplot(5, 4, 2)
         ax2.hist(100*r['win_rates'], bins=40, density=True, alpha=0.7, color='forestgreen', edgecolor='black')
         ax2.axvline(100*np.mean(r['win_rates']), color='red', linestyle='--', linewidth=2, label=f'Mean: {100*np.mean(r["win_rates"]):.1f}%')
         ax2.set_xlabel('Win Rate (%)', fontsize=10)
@@ -559,10 +620,10 @@ class MonteCarloSimulator:
         ax2.grid(True, alpha=0.3)
 
         # 3. Max Drawdown Distribution
-        ax3 = fig.add_subplot(4, 4, 3)
+        ax3 = fig.add_subplot(5, 4, 3)
         ax3.hist(r['max_drawdowns'], bins=50, density=True, alpha=0.7, color='crimson', edgecolor='black')
         ax3.axvline(np.mean(r['max_drawdowns']), color='black', linestyle='--', linewidth=2, label=f'Mean: {np.mean(r["max_drawdowns"]):,.0f}')
-        ax3.axvline(np.percentile(r['max_drawdowns'], 95), color='orange', linestyle='--', linewidth=2, label=f'95th: {np.percentile(r["max_drawdowns"], 95):,.0f}')
+        ax3.axvline(np.percentile(r['max_drawdowns'], 95), color='orange', linestyle='--', linewidth=2, label=f"95th: {np.percentile(r['max_drawdowns'], 95):,.0f}")
         ax3.set_xlabel('Max Drawdown (pips)', fontsize=10)
         ax3.set_ylabel('Density', fontsize=10)
         ax3.set_title('Maximum Drawdown Distribution', fontsize=12, fontweight='bold')
@@ -570,7 +631,7 @@ class MonteCarloSimulator:
         ax3.grid(True, alpha=0.3)
 
         # 4. Probability Curve (Cumulative)
-        ax4 = fig.add_subplot(4, 4, 4)
+        ax4 = fig.add_subplot(5, 4, 4)
         sorted_pips = np.sort(r['annual_pips'])
         cumulative_prob = np.arange(1, len(sorted_pips) + 1) / len(sorted_pips)
         ax4.plot(sorted_pips, 100 * cumulative_prob, linewidth=2, color='steelblue')
@@ -585,7 +646,7 @@ class MonteCarloSimulator:
         ax4.grid(True, alpha=0.3)
 
         # 5. Box Plot of Monthly Pips
-        ax5 = fig.add_subplot(4, 4, 5)
+        ax5 = fig.add_subplot(5, 4, 5)
         monthly_data = np.array([s['monthly_pips'] for s in r['simulations']])
         bp = ax5.boxplot([monthly_data[:, i] for i in range(12)],
                          labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -602,7 +663,7 @@ class MonteCarloSimulator:
         ax5.grid(True, alpha=0.3)
 
         # 6. Sample Equity Curves
-        ax6 = fig.add_subplot(4, 4, 6)
+        ax6 = fig.add_subplot(5, 4, 6)
         np.random.seed(42)
         sample_indices = np.random.choice(len(r['simulations']), size=min(100, len(r['simulations'])), replace=False)
         for idx in sample_indices:
@@ -624,7 +685,7 @@ class MonteCarloSimulator:
         ax6.grid(True, alpha=0.3)
 
         # 7. Consecutive Losses Distribution
-        ax7 = fig.add_subplot(4, 4, 7)
+        ax7 = fig.add_subplot(5, 4, 7)
         unique_streaks, counts = np.unique(r['max_consecutive_losses'], return_counts=True)
         ax7.bar(unique_streaks, counts / len(r['max_consecutive_losses']) * 100,
                 color='coral', edgecolor='black', alpha=0.7)
@@ -634,7 +695,7 @@ class MonteCarloSimulator:
         ax7.grid(True, alpha=0.3)
 
         # 8. Negative Months Distribution
-        ax8 = fig.add_subplot(4, 4, 8)
+        ax8 = fig.add_subplot(5, 4, 8)
         unique_neg, counts_neg = np.unique(r['negative_months'], return_counts=True)
         ax8.bar(unique_neg, counts_neg / len(r['negative_months']) * 100,
                 color='salmon', edgecolor='black', alpha=0.7)
@@ -644,7 +705,7 @@ class MonteCarloSimulator:
         ax8.grid(True, alpha=0.3)
 
         # 9. Pattern Contribution Pie Chart
-        ax9 = fig.add_subplot(4, 4, 9)
+        ax9 = fig.add_subplot(5, 4, 9)
         ultra_contribution = np.mean(r['ultra_pips'])
         standard_contribution = np.mean(r['standard_pips'])
         exit_contribution = np.mean(r['exit_pips'])
@@ -661,7 +722,7 @@ class MonteCarloSimulator:
         ax9.set_title('Pattern Contribution to Total Pips', fontsize=12, fontweight='bold')
 
         # 10. Probability Threshold Chart
-        ax10 = fig.add_subplot(4, 4, 10)
+        ax10 = fig.add_subplot(5, 4, 10)
         thresholds = np.arange(0, 5500, 100)
         probabilities = [100 * np.mean(r['annual_pips'] > t) for t in thresholds]
         ax10.plot(thresholds, probabilities, linewidth=2, color='steelblue')
@@ -676,7 +737,7 @@ class MonteCarloSimulator:
         ax10.grid(True, alpha=0.3)
 
         # 11. Trade Count Distribution
-        ax11 = fig.add_subplot(4, 4, 11)
+        ax11 = fig.add_subplot(5, 4, 11)
         ax11.hist(r['total_trades'], bins=30, density=True, alpha=0.7, color='mediumpurple', edgecolor='black')
         ax11.axvline(np.mean(r['total_trades']), color='red', linestyle='--', linewidth=2,
                      label=f'Mean: {np.mean(r["total_trades"]):,.0f}')
@@ -687,7 +748,7 @@ class MonteCarloSimulator:
         ax11.grid(True, alpha=0.3)
 
         # 12. Risk-Return Scatter
-        ax12 = fig.add_subplot(4, 4, 12)
+        ax12 = fig.add_subplot(5, 4, 12)
         ax12.scatter(r['max_drawdowns'], r['annual_pips'], alpha=0.1, s=10, color='steelblue')
         ax12.axhline(0, color='red', linestyle='--', linewidth=1)
         ax12.set_xlabel('Max Drawdown (pips)', fontsize=10)
@@ -696,7 +757,7 @@ class MonteCarloSimulator:
         ax12.grid(True, alpha=0.3)
 
         # 13. Underwater Equity Chart
-        ax13 = fig.add_subplot(4, 4, 13)
+        ax13 = fig.add_subplot(5, 4, 13)
         # Use a representative simulation for the underwater chart
         sample_idx = len(r['simulations']) // 2  # Middle simulation
         sample_drawdowns = r['simulations'][sample_idx]['drawdowns']
@@ -712,7 +773,7 @@ class MonteCarloSimulator:
         ax13.grid(True, alpha=0.3)
 
         # 14. Monthly Performance Heatmap
-        ax14 = fig.add_subplot(4, 4, 14)
+        ax14 = fig.add_subplot(5, 4, 14)
         monthly_data = np.array([s['monthly_pips'] for s in r['simulations']])
         # Calculate percentiles for each month
         month_percentiles = np.percentile(monthly_data, [10, 25, 50, 75, 90], axis=0)
@@ -742,7 +803,7 @@ class MonteCarloSimulator:
         ax14.set_title('Monthly Performance Heatmap (Percentiles)', fontsize=12, fontweight='bold')
 
         # 15. Expectancy Distribution
-        ax15 = fig.add_subplot(4, 4, 15)
+        ax15 = fig.add_subplot(5, 4, 15)
         ax15.hist(r['expectancy'], bins=40, density=True, alpha=0.7, color='teal', edgecolor='black')
         ax15.axvline(np.mean(r['expectancy']), color='red', linestyle='--', linewidth=2,
                      label=f'Mean: {np.mean(r["expectancy"]):.2f}')
@@ -756,7 +817,7 @@ class MonteCarloSimulator:
         ax15.grid(True, alpha=0.3)
 
         # 16. Profit Factor Distribution
-        ax16 = fig.add_subplot(4, 4, 16)
+        ax16 = fig.add_subplot(5, 4, 16)
         # Filter out infinite values for better visualization
         pf_filtered = r['profit_factor'][r['profit_factor'] < 20]  # Cap at 20 for visualization
         ax16.hist(pf_filtered, bins=40, density=True, alpha=0.7, color='darkgreen', edgecolor='black')
@@ -774,7 +835,43 @@ class MonteCarloSimulator:
         ax16.legend(fontsize=7)
         ax16.grid(True, alpha=0.3)
 
-        plt.tight_layout(rect=[0, 0.01, 1, 0.98])
+        # 17. Drawdown Duration Distribution
+        ax17 = fig.add_subplot(5, 4, 17)
+        # Collect all drawdown durations from all simulations
+        all_dd_durations = []
+        for sim in r['simulations']:
+            if 'drawdown_durations' in sim and sim['drawdown_durations']:
+                all_dd_durations.extend(sim['drawdown_durations'])
+
+        if all_dd_durations:
+            ax17.hist(all_dd_durations, bins=40, density=True, alpha=0.7, color='indianred', edgecolor='black')
+            ax17.axvline(np.mean(all_dd_durations), color='red', linestyle='--', linewidth=2,
+                         label=f'Mean: {np.mean(all_dd_durations):.1f}')
+            ax17.axvline(np.median(all_dd_durations), color='orange', linestyle='--', linewidth=2,
+                         label=f'Median: {np.median(all_dd_durations):.1f}')
+            ax17.set_xlabel('Drawdown Duration (trades)', fontsize=10)
+            ax17.set_ylabel('Density', fontsize=10)
+            ax17.set_title('Drawdown Duration Distribution', fontsize=12, fontweight='bold')
+            ax17.legend(fontsize=8)
+            ax17.grid(True, alpha=0.3)
+        else:
+            ax17.text(0.5, 0.5, 'No Drawdown Data', ha='center', va='center', fontsize=12)
+            ax17.set_title('Drawdown Duration Distribution', fontsize=12, fontweight='bold')
+
+        # 18. Consecutive Wins Distribution
+        ax18 = fig.add_subplot(5, 4, 18)
+        unique_wins, counts_wins = np.unique(r['max_consecutive_wins'], return_counts=True)
+        ax18.bar(unique_wins, counts_wins / len(r['max_consecutive_wins']) * 100,
+                color='mediumseagreen', edgecolor='black', alpha=0.7)
+        ax18.axvline(np.mean(r['max_consecutive_wins']), color='red', linestyle='--', linewidth=2,
+                     label=f'Mean: {np.mean(r["max_consecutive_wins"]):.1f}')
+        ax18.set_xlabel('Max Consecutive Wins', fontsize=10)
+        ax18.set_ylabel('Frequency (%)', fontsize=10)
+        ax18.set_title('Maximum Winning Streak Distribution', fontsize=12, fontweight='bold')
+        ax18.legend(fontsize=8)
+        ax18.grid(True, alpha=0.3)
+
+        plt.tight_layout(rect=[0, 0.01, 1, 0.99])
 
         if save_path:
             plt.savefig(save_path, dpi=150, bbox_inches='tight')
