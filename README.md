@@ -42,7 +42,7 @@ The easiest way to run simulations without installing anything locally:
 
 The workflow generates:
 - Full text output with all statistics
-- 15-panel visualization chart (PNG) with advanced metrics
+- 16-panel visualization chart (PNG) with advanced metrics
 - Results preserved for 30 days
 
 **Estimated run times (with scenario analysis):**
@@ -131,8 +131,10 @@ The simulation generates:
      - **Profit Factor** - Ratio of total wins to total losses
      - **Recovery Factor** - Net profit divided by max drawdown
      - **Win/Loss Ratio** - Average win size vs average loss size
+     - **Sortino Ratio** - Risk-adjusted return (downside deviation only)
+     - **Drawdown Duration** - Average and max time underwater
 
-2. **Visualization** - 15-panel chart (`monte_carlo_results.png`) showing:
+2. **Visualization** - 16-panel chart (`monte_carlo_results.png`) showing:
    - Annual pips distribution
    - Win rate distribution
    - Maximum drawdown analysis
@@ -147,6 +149,7 @@ The simulation generates:
    - **Underwater equity chart** - Visual drawdown analysis
    - **Monthly performance heatmap** - Percentile-based calendar view
    - **Expectancy distribution** - Per-trade profitability
+   - **Profit Factor distribution** - System consistency indicator
 
 3. **Scenario Analysis** - Compares pessimistic, base case, and optimistic scenarios
 
@@ -160,6 +163,8 @@ The simulation generates:
 - **Expectancy**: Average expected pips per trade
 - **Profit Factor**: Total wins / total losses (>2.0 is excellent)
 - **Recovery Factor**: Return efficiency relative to drawdown risk
+- **Sortino Ratio**: Risk-adjusted return using only downside volatility
+- **Drawdown Duration**: Average time spent below equity peak
 
 ## Configuration Parameters
 

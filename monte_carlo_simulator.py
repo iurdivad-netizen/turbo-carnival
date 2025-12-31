@@ -259,6 +259,33 @@ class MonteCarloSimulator:
         net_profit = sum(all_pips)
         recovery_factor = net_profit / max_drawdown if max_drawdown > 0 else float('inf')
 
+        # Sortino Ratio: Return / Downside Deviation
+        # Only penalize downside volatility (negative returns)
+        negative_returns = [p for p in all_pips if p < 0]
+        if negative_returns and len(negative_returns) > 1:
+            downside_deviation = np.std(negative_returns)
+            sortino_ratio = net_profit / downside_deviation if downside_deviation > 0 else float('inf')
+        else:
+            # Not enough negative data - use a placeholder
+            sortino_ratio = 999.9  # Very high but not inf
+
+        # Drawdown Duration: How long equity stays below previous peak
+        drawdown_durations = []
+        current_dd_duration = 0
+        for dd in drawdowns:
+            if dd < 0:  # In drawdown
+                current_dd_duration += 1
+            else:  # At new peak
+                if current_dd_duration > 0:
+                    drawdown_durations.append(current_dd_duration)
+                    current_dd_duration = 0
+        # Add final drawdown if still in one
+        if current_dd_duration > 0:
+            drawdown_durations.append(current_dd_duration)
+
+        avg_dd_duration = np.mean(drawdown_durations) if drawdown_durations else 0
+        max_dd_duration = max(drawdown_durations) if drawdown_durations else 0
+
         return {
             'annual_pips': sum(all_pips),
             'total_trades': len(trades),
@@ -283,7 +310,10 @@ class MonteCarloSimulator:
             'profit_factor': profit_factor,
             'recovery_factor': recovery_factor,
             'avg_win': avg_win,
-            'avg_loss': avg_loss
+            'avg_loss': avg_loss,
+            'sortino_ratio': sortino_ratio,
+            'avg_dd_duration': avg_dd_duration,
+            'max_dd_duration': max_dd_duration
         }
 
     def _count_max_consecutive_losses(self, trades: List[Dict]) -> int:
@@ -341,6 +371,9 @@ class MonteCarloSimulator:
             'recovery_factor': np.array([s['recovery_factor'] for s in simulations]),
             'avg_wins': np.array([s['avg_win'] for s in simulations]),
             'avg_losses': np.array([s['avg_loss'] for s in simulations]),
+            'sortino_ratio': np.array([s['sortino_ratio'] for s in simulations]),
+            'avg_dd_duration': np.array([s['avg_dd_duration'] for s in simulations]),
+            'max_dd_duration': np.array([s['max_dd_duration'] for s in simulations]),
         }
 
         return self.results
@@ -473,6 +506,19 @@ class MonteCarloSimulator:
         print(f"  Mean Win Size:         {np.mean(r['avg_wins']):.1f} pips")
         print(f"  Mean Loss Size:        {np.mean(r['avg_losses']):.1f} pips")
 
+        # Sortino Ratio
+        mean_sortino = np.mean(r['sortino_ratio'][r['sortino_ratio'] < 1000])
+        median_sortino = np.median(r['sortino_ratio'][r['sortino_ratio'] < 1000])
+        print(f"\n  Mean Sortino Ratio:    {mean_sortino:.2f}")
+        print(f"  Median Sortino Ratio:  {median_sortino:.2f}")
+        print(f"  (Better than Sharpe: only penalizes downside)")
+
+        # Drawdown Duration
+        print(f"\n  Avg DD Duration:       {np.mean(r['avg_dd_duration']):.1f} trades")
+        print(f"  Median DD Duration:    {np.median(r['avg_dd_duration']):.1f} trades")
+        print(f"  Max DD Duration (95th):{np.percentile(r['max_dd_duration'], 95):.0f} trades")
+        print(f"  Worst Case DD Duration:{np.max(r['max_dd_duration']):.0f} trades")
+
         print("\n" + "=" * 70)
 
     def plot_results(self, save_path: str = None):
@@ -483,14 +529,14 @@ class MonteCarloSimulator:
 
         r = self.results
 
-        fig = plt.figure(figsize=(20, 30))
+        fig = plt.figure(figsize=(24, 24))
 
         # Title
         fig.suptitle('Monte Carlo Simulation: EURUSD 2026 Forecast\n(Based on 147-trade historical sample)',
                      fontsize=16, fontweight='bold', y=0.99)
 
         # 1. Annual Pips Distribution
-        ax1 = fig.add_subplot(5, 3, 1)
+        ax1 = fig.add_subplot(4, 4, 1)
         ax1.hist(r['annual_pips'], bins=60, density=True, alpha=0.7, color='steelblue', edgecolor='black')
         ax1.axvline(np.mean(r['annual_pips']), color='red', linestyle='--', linewidth=2, label=f'Mean: {np.mean(r["annual_pips"]):,.0f}')
         ax1.axvline(np.median(r['annual_pips']), color='orange', linestyle='--', linewidth=2, label=f'Median: {np.median(r["annual_pips"]):,.0f}')
@@ -503,7 +549,7 @@ class MonteCarloSimulator:
         ax1.grid(True, alpha=0.3)
 
         # 2. Win Rate Distribution
-        ax2 = fig.add_subplot(5, 3, 2)
+        ax2 = fig.add_subplot(4, 4, 2)
         ax2.hist(100*r['win_rates'], bins=40, density=True, alpha=0.7, color='forestgreen', edgecolor='black')
         ax2.axvline(100*np.mean(r['win_rates']), color='red', linestyle='--', linewidth=2, label=f'Mean: {100*np.mean(r["win_rates"]):.1f}%')
         ax2.set_xlabel('Win Rate (%)', fontsize=10)
@@ -513,7 +559,7 @@ class MonteCarloSimulator:
         ax2.grid(True, alpha=0.3)
 
         # 3. Max Drawdown Distribution
-        ax3 = fig.add_subplot(5, 3, 3)
+        ax3 = fig.add_subplot(4, 4, 3)
         ax3.hist(r['max_drawdowns'], bins=50, density=True, alpha=0.7, color='crimson', edgecolor='black')
         ax3.axvline(np.mean(r['max_drawdowns']), color='black', linestyle='--', linewidth=2, label=f'Mean: {np.mean(r["max_drawdowns"]):,.0f}')
         ax3.axvline(np.percentile(r['max_drawdowns'], 95), color='orange', linestyle='--', linewidth=2, label=f'95th: {np.percentile(r["max_drawdowns"], 95):,.0f}')
@@ -524,7 +570,7 @@ class MonteCarloSimulator:
         ax3.grid(True, alpha=0.3)
 
         # 4. Probability Curve (Cumulative)
-        ax4 = fig.add_subplot(5, 3, 4)
+        ax4 = fig.add_subplot(4, 4, 4)
         sorted_pips = np.sort(r['annual_pips'])
         cumulative_prob = np.arange(1, len(sorted_pips) + 1) / len(sorted_pips)
         ax4.plot(sorted_pips, 100 * cumulative_prob, linewidth=2, color='steelblue')
@@ -539,7 +585,7 @@ class MonteCarloSimulator:
         ax4.grid(True, alpha=0.3)
 
         # 5. Box Plot of Monthly Pips
-        ax5 = fig.add_subplot(5, 3, 5)
+        ax5 = fig.add_subplot(4, 4, 5)
         monthly_data = np.array([s['monthly_pips'] for s in r['simulations']])
         bp = ax5.boxplot([monthly_data[:, i] for i in range(12)],
                          labels=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -556,7 +602,7 @@ class MonteCarloSimulator:
         ax5.grid(True, alpha=0.3)
 
         # 6. Sample Equity Curves
-        ax6 = fig.add_subplot(5, 3, 6)
+        ax6 = fig.add_subplot(4, 4, 6)
         np.random.seed(42)
         sample_indices = np.random.choice(len(r['simulations']), size=min(100, len(r['simulations'])), replace=False)
         for idx in sample_indices:
@@ -578,7 +624,7 @@ class MonteCarloSimulator:
         ax6.grid(True, alpha=0.3)
 
         # 7. Consecutive Losses Distribution
-        ax7 = fig.add_subplot(5, 3, 7)
+        ax7 = fig.add_subplot(4, 4, 7)
         unique_streaks, counts = np.unique(r['max_consecutive_losses'], return_counts=True)
         ax7.bar(unique_streaks, counts / len(r['max_consecutive_losses']) * 100,
                 color='coral', edgecolor='black', alpha=0.7)
@@ -588,7 +634,7 @@ class MonteCarloSimulator:
         ax7.grid(True, alpha=0.3)
 
         # 8. Negative Months Distribution
-        ax8 = fig.add_subplot(5, 3, 8)
+        ax8 = fig.add_subplot(4, 4, 8)
         unique_neg, counts_neg = np.unique(r['negative_months'], return_counts=True)
         ax8.bar(unique_neg, counts_neg / len(r['negative_months']) * 100,
                 color='salmon', edgecolor='black', alpha=0.7)
@@ -598,7 +644,7 @@ class MonteCarloSimulator:
         ax8.grid(True, alpha=0.3)
 
         # 9. Pattern Contribution Pie Chart
-        ax9 = fig.add_subplot(5, 3, 9)
+        ax9 = fig.add_subplot(4, 4, 9)
         ultra_contribution = np.mean(r['ultra_pips'])
         standard_contribution = np.mean(r['standard_pips'])
         exit_contribution = np.mean(r['exit_pips'])
@@ -615,7 +661,7 @@ class MonteCarloSimulator:
         ax9.set_title('Pattern Contribution to Total Pips', fontsize=12, fontweight='bold')
 
         # 10. Probability Threshold Chart
-        ax10 = fig.add_subplot(5, 3, 10)
+        ax10 = fig.add_subplot(4, 4, 10)
         thresholds = np.arange(0, 5500, 100)
         probabilities = [100 * np.mean(r['annual_pips'] > t) for t in thresholds]
         ax10.plot(thresholds, probabilities, linewidth=2, color='steelblue')
@@ -630,7 +676,7 @@ class MonteCarloSimulator:
         ax10.grid(True, alpha=0.3)
 
         # 11. Trade Count Distribution
-        ax11 = fig.add_subplot(5, 3, 11)
+        ax11 = fig.add_subplot(4, 4, 11)
         ax11.hist(r['total_trades'], bins=30, density=True, alpha=0.7, color='mediumpurple', edgecolor='black')
         ax11.axvline(np.mean(r['total_trades']), color='red', linestyle='--', linewidth=2,
                      label=f'Mean: {np.mean(r["total_trades"]):,.0f}')
@@ -641,7 +687,7 @@ class MonteCarloSimulator:
         ax11.grid(True, alpha=0.3)
 
         # 12. Risk-Return Scatter
-        ax12 = fig.add_subplot(5, 3, 12)
+        ax12 = fig.add_subplot(4, 4, 12)
         ax12.scatter(r['max_drawdowns'], r['annual_pips'], alpha=0.1, s=10, color='steelblue')
         ax12.axhline(0, color='red', linestyle='--', linewidth=1)
         ax12.set_xlabel('Max Drawdown (pips)', fontsize=10)
@@ -650,7 +696,7 @@ class MonteCarloSimulator:
         ax12.grid(True, alpha=0.3)
 
         # 13. Underwater Equity Chart
-        ax13 = fig.add_subplot(5, 3, 13)
+        ax13 = fig.add_subplot(4, 4, 13)
         # Use a representative simulation for the underwater chart
         sample_idx = len(r['simulations']) // 2  # Middle simulation
         sample_drawdowns = r['simulations'][sample_idx]['drawdowns']
@@ -666,7 +712,7 @@ class MonteCarloSimulator:
         ax13.grid(True, alpha=0.3)
 
         # 14. Monthly Performance Heatmap
-        ax14 = fig.add_subplot(5, 3, 14)
+        ax14 = fig.add_subplot(4, 4, 14)
         monthly_data = np.array([s['monthly_pips'] for s in r['simulations']])
         # Calculate percentiles for each month
         month_percentiles = np.percentile(monthly_data, [10, 25, 50, 75, 90], axis=0)
@@ -696,7 +742,7 @@ class MonteCarloSimulator:
         ax14.set_title('Monthly Performance Heatmap (Percentiles)', fontsize=12, fontweight='bold')
 
         # 15. Expectancy Distribution
-        ax15 = fig.add_subplot(5, 3, 15)
+        ax15 = fig.add_subplot(4, 4, 15)
         ax15.hist(r['expectancy'], bins=40, density=True, alpha=0.7, color='teal', edgecolor='black')
         ax15.axvline(np.mean(r['expectancy']), color='red', linestyle='--', linewidth=2,
                      label=f'Mean: {np.mean(r["expectancy"]):.2f}')
@@ -708,6 +754,25 @@ class MonteCarloSimulator:
         ax15.set_title('Trade Expectancy Distribution', fontsize=12, fontweight='bold')
         ax15.legend(fontsize=8)
         ax15.grid(True, alpha=0.3)
+
+        # 16. Profit Factor Distribution
+        ax16 = fig.add_subplot(4, 4, 16)
+        # Filter out infinite values for better visualization
+        pf_filtered = r['profit_factor'][r['profit_factor'] < 20]  # Cap at 20 for visualization
+        ax16.hist(pf_filtered, bins=40, density=True, alpha=0.7, color='darkgreen', edgecolor='black')
+        ax16.axvline(np.mean(pf_filtered), color='red', linestyle='--', linewidth=2,
+                     label=f'Mean: {np.mean(pf_filtered):.2f}')
+        ax16.axvline(np.median(pf_filtered), color='orange', linestyle='--', linewidth=2,
+                     label=f'Median: {np.median(pf_filtered):.2f}')
+        ax16.axvline(2.0, color='green', linestyle=':', linewidth=2, alpha=0.7,
+                     label='2.0 (Excellent)')
+        ax16.axvline(1.0, color='black', linestyle='-', linewidth=1, alpha=0.5,
+                     label='1.0 (Breakeven)')
+        ax16.set_xlabel('Profit Factor', fontsize=10)
+        ax16.set_ylabel('Density', fontsize=10)
+        ax16.set_title('Profit Factor Distribution', fontsize=12, fontweight='bold')
+        ax16.legend(fontsize=7)
+        ax16.grid(True, alpha=0.3)
 
         plt.tight_layout(rect=[0, 0.01, 1, 0.98])
 
