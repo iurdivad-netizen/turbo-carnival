@@ -4,15 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       simulations:
-        description: 'Number of simulations to run'
-        required: false
+        description: 'Number of simulations to run (1 - 100,000)'
+        required: true
         default: '10000'
-        type: choice
-        options:
-          - '1000'
-          - '5000'
-          - '10000'
-          - '25000'
+        type: number
       scenario_analysis:
         description: 'Include scenario analysis'
         required: false
@@ -23,9 +18,24 @@ jobs:
   simulate:
     name: Run Monte Carlo Simulation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
+      - name: Validate simulation count
+        run: |
+          SIMS=${{ github.event.inputs.simulations }}
+          if [ "$SIMS" -lt 1 ] || [ "$SIMS" -gt 100000 ]; then
+            echo "❌ Error: Simulation count must be between 1 and 100,000"
+            echo "   Provided: $SIMS"
+            exit 1
+          fi
+
+          if [ "$SIMS" -lt 1000 ]; then
+            echo "⚠️  Warning: Less than 1,000 simulations may produce unreliable results"
+          fi
+
+          echo "✓ Simulation count validated: $SIMS"
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -42,15 +52,33 @@ jobs:
 
       - name: Run Monte Carlo Simulation
         run: |
-          echo "::group::Running Monte Carlo Simulation with ${{ github.event.inputs.simulations }} simulations"
-          python monte_carlo_simulator.py -n ${{ github.event.inputs.simulations }} > simulation_output.txt 2>&1
+          SIMS=${{ github.event.inputs.simulations }}
+          SCENARIO="${{ github.event.inputs.scenario_analysis }}"
+
+          echo "::group::Running Monte Carlo Simulation with $SIMS simulations"
+
+          if [ "$SCENARIO" = "false" ]; then
+            echo "Running without scenario analysis..."
+            python monte_carlo_simulator.py -n $SIMS --no-scenario > simulation_output.txt 2>&1
+          else
+            echo "Running with scenario analysis..."
+            python monte_carlo_simulator.py -n $SIMS > simulation_output.txt 2>&1
+          fi
+
           echo "::endgroup::"
 
-          echo "::notice::Simulation completed successfully with ${{ github.event.inputs.simulations }} simulations"
+          echo "::notice::Simulation completed successfully with $SIMS simulations"
 
       - name: Display Summary
         run: |
+          SIMS=${{ github.event.inputs.simulations }}
+          SCENARIO="${{ github.event.inputs.scenario_analysis }}"
+
           echo "### 📊 Monte Carlo Simulation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Simulations: $SIMS" >> $GITHUB_STEP_SUMMARY
+          echo "- Scenario Analysis: $SCENARIO" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           head -n 100 simulation_output.txt >> $GITHUB_STEP_SUMMARY

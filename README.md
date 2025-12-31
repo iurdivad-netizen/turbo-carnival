@@ -27,15 +27,25 @@ The easiest way to run simulations without installing anything locally:
 2. Click the **Actions** tab
 3. Select **Monte Carlo Trading Simulation** workflow
 4. Click **Run workflow** button
-5. Choose number of simulations (1,000 - 25,000)
-6. Click **Run workflow**
-7. Wait for completion (~2-5 minutes)
-8. Download results from **Artifacts** section
+5. Enter **custom simulation count** (1 to 100,000)
+   - Common values: 1,000 | 5,000 | 10,000 | 25,000 | 50,000 | 100,000
+   - Or enter any value between 1 and 100,000
+6. Choose whether to include **scenario analysis** (optional, unchecking saves time)
+7. Click **Run workflow**
+8. Wait for completion (time varies by simulation count)
+9. Download results from **Artifacts** section
 
 The workflow generates:
 - Full text output with all statistics
 - 12-panel visualization chart (PNG)
 - Results preserved for 30 days
+
+**Estimated run times:**
+- 1,000 sims: ~1 minute
+- 10,000 sims: ~3-5 minutes
+- 25,000 sims: ~8-12 minutes
+- 50,000 sims: ~20-30 minutes
+- 100,000 sims: ~40-60 minutes
 
 ### Option 2: Local Execution
 
