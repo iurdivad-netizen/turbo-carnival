@@ -42,7 +42,7 @@ The easiest way to run simulations without installing anything locally:
 
 The workflow generates:
 - Full text output with all statistics
-- 18-panel visualization chart (PNG) with advanced metrics
+- 20-panel visualization chart (PNG) with advanced metrics and interpretation guides
 - Results preserved for 30 days
 
 **Estimated run times (with scenario analysis):**
@@ -136,7 +136,7 @@ The simulation generates:
      - **Drawdown Duration** - Average and max time underwater
      - **Win Streaks** - Maximum and average consecutive wins
 
-2. **Visualization** - 18-panel chart (`monte_carlo_results.png`) showing:
+2. **Visualization** - 20-panel chart (`monte_carlo_results.png`) showing:
    - Annual pips distribution
    - Win rate distribution
    - Maximum drawdown analysis
@@ -154,6 +154,8 @@ The simulation generates:
    - **Profit Factor distribution** - System consistency indicator
    - **Drawdown Duration distribution** - Recovery time analysis
    - **Consecutive Wins distribution** - Win streak patterns
+   - **Chart Guide** - Explains the purpose of key visualizations
+   - **Interpretation Guide** - Benchmark values and red flags
 
 3. **Scenario Analysis** - Compares pessimistic, base case, and optimistic scenarios
 

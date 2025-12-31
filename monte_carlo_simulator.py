@@ -871,6 +871,83 @@ class MonteCarloSimulator:
         ax18.legend(fontsize=8)
         ax18.grid(True, alpha=0.3)
 
+        # 19. Chart Guide Panel
+        ax19 = fig.add_subplot(5, 4, 19)
+        ax19.axis('off')
+
+        guide_text = """CHART GUIDE
+
+Key Visualizations:
+
+• Annual Pips (#1): Main performance metric
+  Shows distribution of yearly outcomes
+
+• Max Drawdown (#3): Risk assessment
+  Lower = better risk management
+
+• Equity Curves (#6): Visual path of growth
+  Consistency matters more than peaks
+
+• Underwater Chart (#13): Recovery analysis
+  Shows time spent below equity peak
+
+• Expectancy (#15): Per-trade profitability
+  Must be positive for long-term success
+
+• Profit Factor (#16): Win/loss efficiency
+  >2.0 is excellent, >1.5 is good
+
+• DD Duration (#17): Recovery time
+  Shorter = faster return to profitability
+
+• Win Streaks (#18): Momentum indicator
+  Helps assess psychological resilience
+"""
+        ax19.text(0.05, 0.95, guide_text, transform=ax19.transAxes,
+                 fontsize=9, verticalalignment='top', fontfamily='monospace',
+                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3))
+        ax19.set_title('Understanding the Charts', fontsize=12, fontweight='bold', pad=10)
+
+        # 20. Interpretation Guide Panel
+        ax20 = fig.add_subplot(5, 4, 20)
+        ax20.axis('off')
+
+        interpret_text = """INTERPRETATION GUIDE
+
+What "Good" Looks Like:
+
+✓ Expectancy: >8 pips/trade
+  Higher = more profitable per trade
+
+✓ Profit Factor: >2.0 excellent
+  Measures total wins vs losses
+
+✓ Win Rate: 60-70% optimal
+  Too high may indicate curve fitting
+
+✓ Calmar Ratio: >3.0 excellent
+  Return efficiency vs drawdown risk
+
+✓ Sortino Ratio: >2.0 excellent
+  Risk-adjusted return (downside only)
+
+✓ Max Drawdown: <100 pips ideal
+  Keep risk manageable
+
+✓ Win Streaks: Higher average = momentum
+  Psychological confidence factor
+
+⚠ Red Flags:
+  • Expectancy near zero
+  • Profit Factor <1.5
+  • Drawdown >10% of annual target
+  • Long DD durations (>50 trades)
+"""
+        ax20.text(0.05, 0.95, interpret_text, transform=ax20.transAxes,
+                 fontsize=9, verticalalignment='top', fontfamily='monospace',
+                 bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
+        ax20.set_title('Interpreting the Results', fontsize=12, fontweight='bold', pad=10)
+
         plt.tight_layout(rect=[0, 0.01, 1, 0.99])
 
         if save_path:
