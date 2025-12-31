@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       simulations:
-        description: 'Number of simulations to run (1 - 100,000)'
+        description: 'Number of simulations (1-100k, recommended max: 50k for GitHub Actions)'
         required: true
         default: '10000'
         type: number
@@ -32,6 +32,13 @@ jobs:
 
           if [ "$SIMS" -lt 1000 ]; then
             echo "⚠️  Warning: Less than 1,000 simulations may produce unreliable results"
+          fi
+
+          if [ "$SIMS" -gt 50000 ]; then
+            echo "⚠️  Warning: Simulations above 50,000 may hit GitHub Actions resource limits"
+            echo "   This job could fail due to memory/CPU constraints"
+            echo "   Recommended maximum for GitHub Actions: 50,000 simulations"
+            echo "   For larger runs, consider executing locally"
           fi
 
           echo "✓ Simulation count validated: $SIMS"

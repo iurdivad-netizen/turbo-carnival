@@ -28,8 +28,9 @@ The easiest way to run simulations without installing anything locally:
 3. Select **Monte Carlo Trading Simulation** workflow
 4. Click **Run workflow** button
 5. Enter **custom simulation count** (1 to 100,000)
-   - Common values: 1,000 | 5,000 | 10,000 | 25,000 | 50,000 | 100,000
-   - Or enter any value between 1 and 100,000
+   - **Recommended for GitHub Actions:** 1,000 | 5,000 | 10,000 | 25,000 | 50,000
+   - **Maximum safe limit:** 50,000 (higher values may fail due to resource limits)
+   - Can enter any value 1-100k, but >50k not recommended on GitHub Actions
 6. Choose whether to include **scenario analysis** (optional, unchecking saves time)
 7. Click **Run workflow**
 8. Wait for completion (time varies by simulation count)
@@ -46,6 +47,8 @@ The workflow generates:
 - 25,000 sims: ~8-12 minutes
 - 50,000 sims: ~20-30 minutes
 - 100,000 sims: ~40-60 minutes
+
+> ⚠️ **Important:** Simulations above 50,000 may hit GitHub Actions' resource limits and could fail due to memory/CPU constraints. For very large simulations (>50k), consider running locally or using a more powerful compute environment. The 50,000 simulation limit is recommended as the practical maximum for GitHub Actions.
 
 ### Option 2: Local Execution
 
