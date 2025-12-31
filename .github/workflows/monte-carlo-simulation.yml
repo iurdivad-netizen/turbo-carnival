@@ -24,6 +24,8 @@ jobs:
       - name: Validate simulation count
         run: |
           SIMS=${{ github.event.inputs.simulations }}
+          SCENARIO="${{ github.event.inputs.scenario_analysis }}"
+
           if [ "$SIMS" -lt 1 ] || [ "$SIMS" -gt 100000 ]; then
             echo "❌ Error: Simulation count must be between 1 and 100,000"
             echo "   Provided: $SIMS"
@@ -34,14 +36,23 @@ jobs:
             echo "⚠️  Warning: Less than 1,000 simulations may produce unreliable results"
           fi
 
-          if [ "$SIMS" -gt 50000 ]; then
-            echo "⚠️  Warning: Simulations above 50,000 may hit GitHub Actions resource limits"
-            echo "   This job could fail due to memory/CPU constraints"
-            echo "   Recommended maximum for GitHub Actions: 50,000 simulations"
-            echo "   For larger runs, consider executing locally"
+          # Different warnings based on scenario analysis setting
+          if [ "$SCENARIO" = "true" ]; then
+            TOTAL=$((SIMS * 4))
+            if [ "$SIMS" -gt 50000 ]; then
+              echo "⚠️  Warning: With scenario analysis enabled, $SIMS simulations = $TOTAL total simulations"
+              echo "   This exceeds GitHub Actions recommended limit and may fail"
+              echo "   Recommended: Use ≤50,000 with scenarios OR disable scenario analysis for larger runs"
+            fi
+            echo "ℹ️  Total simulations (main + 3 scenarios): $TOTAL"
+          else
+            if [ "$SIMS" -gt 50000 ] && [ "$SIMS" -le 100000 ]; then
+              echo "ℹ️  Running $SIMS simulations without scenario analysis"
+              echo "   This should complete successfully on GitHub Actions"
+            fi
           fi
 
-          echo "✓ Simulation count validated: $SIMS"
+          echo "✓ Simulation count validated: $SIMS (Scenario analysis: $SCENARIO)"
 
       - name: Checkout repository
         uses: actions/checkout@v4

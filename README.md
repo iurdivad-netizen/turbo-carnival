@@ -28,9 +28,10 @@ The easiest way to run simulations without installing anything locally:
 3. Select **Monte Carlo Trading Simulation** workflow
 4. Click **Run workflow** button
 5. Enter **custom simulation count** (1 to 100,000)
-   - **Recommended for GitHub Actions:** 1,000 | 5,000 | 10,000 | 25,000 | 50,000
-   - **Maximum safe limit:** 50,000 (higher values may fail due to resource limits)
-   - Can enter any value 1-100k, but >50k not recommended on GitHub Actions
+   - **Recommended values:** 1,000 | 5,000 | 10,000 | 25,000 | 50,000 | 100,000
+   - **With scenario analysis:** Max recommended is 50,000 (200k total simulations)
+   - **Without scenario analysis:** Can run up to 100,000 (100k total simulations)
+   - Enter any value between 1 and 100,000
 6. Choose whether to include **scenario analysis** (optional)
    - Runs 3 additional scenarios: Pessimistic, Base Case, Optimistic
    - Each scenario uses the same simulation count as the main run
@@ -51,11 +52,15 @@ The workflow generates:
 - 50,000 sims: ~35-50 minutes (200,000 total simulations)
 - 100,000 sims: ~60-90 minutes (400,000 total simulations)
 
-**Without scenario analysis (--no-scenario unchecked):**
+**Without scenario analysis (scenario analysis unchecked):**
 - Runtime is approximately 25% of the times above
 - Recommended for quick tests or when only main analysis is needed
+- **Enables runs up to 100,000 simulations on GitHub Actions**
 
-> ⚠️ **Important:** Simulations above 50,000 may hit GitHub Actions' resource limits and could fail due to memory/CPU constraints. For very large simulations (>50k), consider running locally or using a more powerful compute environment. The 50,000 simulation limit is recommended as the practical maximum for GitHub Actions.
+> ⚠️ **GitHub Actions Resource Limits:**
+> - **With scenario analysis:** Recommended max is **50,000 simulations** (200k total with scenarios). Higher values may fail due to memory/CPU constraints.
+> - **Without scenario analysis:** Can run up to **100,000 simulations** (100k total). This is feasible on GitHub Actions when scenarios are disabled.
+> - For even larger runs or scenario analysis above 50k, consider running locally or using a more powerful compute environment.
 
 ### Option 2: Local Execution
 
