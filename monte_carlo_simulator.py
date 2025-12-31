@@ -879,29 +879,35 @@ class MonteCarloSimulator:
 
 Key Visualizations:
 
-• Annual Pips (#1): Main performance metric
-  Shows distribution of yearly outcomes
+• Annual Pips Distribution (#1)
+  Main performance metric showing yearly outcomes
 
-• Max Drawdown (#3): Risk assessment
-  Lower = better risk management
+• Maximum Drawdown Distribution (#3)
+  Risk assessment - lower is better
 
-• Equity Curves (#6): Visual path of growth
-  Consistency matters more than peaks
+• Sample Equity Curves (#6)
+  Visual growth paths - consistency matters
 
-• Underwater Chart (#13): Recovery analysis
-  Shows time spent below equity peak
+• Maximum Losing Streak (#7)
+  Psychological resilience indicator
 
-• Expectancy (#15): Per-trade profitability
-  Must be positive for long-term success
+• Underwater Equity Chart (#13)
+  Recovery analysis - time below peak
 
-• Profit Factor (#16): Win/loss efficiency
-  >2.0 is excellent, >1.5 is good
+• Monthly Performance Heatmap (#14)
+  Calendar view of seasonal patterns
 
-• DD Duration (#17): Recovery time
-  Shorter = faster return to profitability
+• Trade Expectancy Distribution (#15)
+  Per-trade profitability - must be positive
 
-• Win Streaks (#18): Momentum indicator
-  Helps assess psychological resilience
+• Profit Factor Distribution (#16)
+  Win/loss efficiency - >2.0 is excellent
+
+• Drawdown Duration Distribution (#17)
+  Recovery time - shorter is better
+
+• Maximum Winning Streak (#18)
+  Momentum and confidence indicator
 """
         ax19.text(0.05, 0.95, guide_text, transform=ax19.transAxes,
                  fontsize=9, verticalalignment='top', fontfamily='monospace',
