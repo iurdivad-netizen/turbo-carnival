@@ -42,7 +42,7 @@ The easiest way to run simulations without installing anything locally:
 
 The workflow generates:
 - Full text output with all statistics
-- 12-panel visualization chart (PNG)
+- 15-panel visualization chart (PNG) with advanced metrics
 - Results preserved for 30 days
 
 **Estimated run times (with scenario analysis):**
@@ -126,15 +126,27 @@ The simulation generates:
    - Risk metrics (drawdown, consecutive losses)
    - Pattern contribution breakdown
    - Percentile distributions
+   - **Advanced Performance Metrics:**
+     - **Expectancy** - Average pips per trade
+     - **Profit Factor** - Ratio of total wins to total losses
+     - **Recovery Factor** - Net profit divided by max drawdown
+     - **Win/Loss Ratio** - Average win size vs average loss size
 
-2. **Visualization** - 12-panel chart (`monte_carlo_results.png`) showing:
+2. **Visualization** - 15-panel chart (`monte_carlo_results.png`) showing:
    - Annual pips distribution
    - Win rate distribution
    - Maximum drawdown analysis
    - Cumulative probability curves
    - Monthly performance boxplots
    - Sample equity curves
-   - Risk-return relationships
+   - Consecutive losses and negative months
+   - Pattern contribution pie chart
+   - Probability threshold curves
+   - Trade count distribution
+   - Risk-return scatter
+   - **Underwater equity chart** - Visual drawdown analysis
+   - **Monthly performance heatmap** - Percentile-based calendar view
+   - **Expectancy distribution** - Per-trade profitability
 
 3. **Scenario Analysis** - Compares pessimistic, base case, and optimistic scenarios
 
@@ -145,6 +157,9 @@ The simulation generates:
 - **Max Drawdown**: Largest peak-to-trough decline
 - **Probability Analysis**: P(Profit > X pips)
 - **Pattern Contribution**: Pips attribution by pattern type
+- **Expectancy**: Average expected pips per trade
+- **Profit Factor**: Total wins / total losses (>2.0 is excellent)
+- **Recovery Factor**: Return efficiency relative to drawdown risk
 
 ## Configuration Parameters
 
