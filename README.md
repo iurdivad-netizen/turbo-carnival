@@ -31,7 +31,10 @@ The easiest way to run simulations without installing anything locally:
    - **Recommended for GitHub Actions:** 1,000 | 5,000 | 10,000 | 25,000 | 50,000
    - **Maximum safe limit:** 50,000 (higher values may fail due to resource limits)
    - Can enter any value 1-100k, but >50k not recommended on GitHub Actions
-6. Choose whether to include **scenario analysis** (optional, unchecking saves time)
+6. Choose whether to include **scenario analysis** (optional)
+   - Runs 3 additional scenarios: Pessimistic, Base Case, Optimistic
+   - Each scenario uses the same simulation count as the main run
+   - Unchecking this option significantly reduces runtime
 7. Click **Run workflow**
 8. Wait for completion (time varies by simulation count)
 9. Download results from **Artifacts** section
@@ -41,12 +44,16 @@ The workflow generates:
 - 12-panel visualization chart (PNG)
 - Results preserved for 30 days
 
-**Estimated run times:**
-- 1,000 sims: ~1 minute
-- 10,000 sims: ~3-5 minutes
-- 25,000 sims: ~8-12 minutes
-- 50,000 sims: ~20-30 minutes
-- 100,000 sims: ~40-60 minutes
+**Estimated run times (with scenario analysis):**
+- 1,000 sims: ~1-2 minutes (4,000 total simulations)
+- 10,000 sims: ~5-8 minutes (40,000 total simulations)
+- 25,000 sims: ~15-25 minutes (100,000 total simulations)
+- 50,000 sims: ~35-50 minutes (200,000 total simulations)
+- 100,000 sims: ~60-90 minutes (400,000 total simulations)
+
+**Without scenario analysis (--no-scenario unchecked):**
+- Runtime is approximately 25% of the times above
+- Recommended for quick tests or when only main analysis is needed
 
 > ⚠️ **Important:** Simulations above 50,000 may hit GitHub Actions' resource limits and could fail due to memory/CPU constraints. For very large simulations (>50k), consider running locally or using a more powerful compute environment. The 50,000 simulation limit is recommended as the practical maximum for GitHub Actions.
 

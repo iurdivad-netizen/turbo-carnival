@@ -732,8 +732,12 @@ Examples:
 
     # Run scenario analysis (optional)
     if not args.no_scenario:
-        # Use half the main simulation count for scenario analysis to save time
-        scenario_sims = max(1000, args.simulations // 2)
+        # Use same simulation count as main analysis for consistency
+        scenario_sims = args.simulations
+        if scenario_sims > 25000:
+            print(f"\n⚠️  Running scenario analysis with {scenario_sims:,} simulations per scenario")
+            print(f"   This will run 3 scenarios totaling {scenario_sims * 3:,} simulations")
+            print(f"   Consider using --no-scenario for faster execution")
         scenario_results = run_scenario_analysis(n_simulations=scenario_sims)
     else:
         print("\n⏭️  Skipping scenario analysis")
